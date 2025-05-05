@@ -14,6 +14,7 @@ from control import potential_field_control, reactive_obst_avoid
 from occupancy_grid import OccupancyGrid
 from planner import Planner
 
+NB_ITER_EXPLO = 10
 
 # Definition of our robot controller
 class MyRobotSlam(RobotAbstract):
@@ -51,15 +52,22 @@ class MyRobotSlam(RobotAbstract):
         """
         Main control function executed at each time step
         """
-
+        goal = [-800,0,0]
         self.tiny_slam.update_map(self.lidar(), self.odometer_values())
         self.counter += 1
         if self.counter % 2 == 0:
-            self.occupancy_grid.display_cv(self.odometer_values(), goal=[-800,0,0])
+            self.occupancy_grid.display_cv(self.odometer_values(), goal)
 
-        print(self.tiny_slam._score(self.lidar(), self.odometer_values()))
-
-        return self.control_tp2()
+        print("itération :", self.counter)
+        if self.counter < NB_ITER_EXPLO:
+            goal = [-800,0,0]
+            score = self.tiny_slam.localise(self.lidar(), self.odometer_values())
+            return self.control_tp2(goal)
+        else:
+            goal = self.planner.explore_frontiers()
+            path = self.planner.plan(self.corrected_pose, goal)
+            print("path", path)
+            return self.control_tp2(path[1])
 
     def control_tp1(self):
         """
@@ -71,7 +79,7 @@ class MyRobotSlam(RobotAbstract):
         command = reactive_obst_avoid(self.lidar())
         return command
 
-    def control_tp2(self):
+    def control_tp2(self, goal):
         """
         Control function for TP2
         Main control function with full SLAM, random exploration and path planning

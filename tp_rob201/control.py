@@ -129,7 +129,7 @@ def potential_field_control(lidar, current_pose, goal_pose):
     angle_error = (angle_error + np.pi) % (2 * np.pi) - np.pi
     
     # CONTROLEUR PROPORTIONNEL
-    K_p = 0.2
+    K_p = 0.1
     forward = min(K_p * np.linalg.norm(grad), 1) if dst >= MIN_DIST else 0
     rotation = np.clip(K_p * angle_error, -1, 1)
     
