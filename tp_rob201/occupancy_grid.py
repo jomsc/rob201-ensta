@@ -195,7 +195,9 @@ class OccupancyGrid:
         pt2 = (int(pt2_x), self.y_max_map - int(pt2_y))
         cv2.arrowedLine(img=img_color, pt1=pt1, pt2=pt2,
                         color=(0, 0, 255), thickness=2)
+        
         cv2.imshow("map slam", img_color)
+
         if VIDEO_OUT:
             self.cv_out.write(img_color)
 

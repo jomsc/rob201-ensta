@@ -14,7 +14,7 @@ from control import potential_field_control, reactive_obst_avoid
 from occupancy_grid import OccupancyGrid
 from planner import Planner
 
-NB_ITER_EXPLO = 10
+NB_ITER_EXPLO = 1000
 
 # Definition of our robot controller
 class MyRobotSlam(RobotAbstract):
@@ -40,7 +40,7 @@ class MyRobotSlam(RobotAbstract):
                                             x_max=size_area[0] / 2 - robot_position[0],
                                             y_min=-(size_area[1] / 2 + robot_position[1]),
                                             y_max=size_area[1] / 2 - robot_position[1],
-                                            resolution=2)
+                                            resolution=4)
 
         self.tiny_slam = TinySlam(self.occupancy_grid)
         self.planner = Planner(self.occupancy_grid)
@@ -54,20 +54,27 @@ class MyRobotSlam(RobotAbstract):
         """
         goal = [-800,0,0]
         self.tiny_slam.update_map(self.lidar(), self.odometer_values())
+        score = self.tiny_slam.localise(self.lidar(), self.odometer_values())
         self.counter += 1
-        if self.counter % 2 == 0:
-            self.occupancy_grid.display_cv(self.odometer_values(), goal)
+
+        self.corrected_pose = self.tiny_slam.get_corrected_pose(self.odometer_values())
 
         print("itération :", self.counter)
         if self.counter < NB_ITER_EXPLO:
             goal = [-800,0,0]
-            score = self.tiny_slam.localise(self.lidar(), self.odometer_values())
-            return self.control_tp2(goal)
+            
         else:
             goal = self.planner.explore_frontiers()
             path = self.planner.plan(self.corrected_pose, goal)
-            print("path", path)
-            return self.control_tp2(path[1])
+            goal = path[1]
+            
+        
+        print("goal : ", goal)
+
+        if self.counter % 2 == 0:
+            self.occupancy_grid.display_cv(self.odometer_values(), goal)
+        
+        return self.control_tp2(goal)
 
     def control_tp1(self):
         """
@@ -85,7 +92,8 @@ class MyRobotSlam(RobotAbstract):
         Main control function with full SLAM, random exploration and path planning
         """
         pose = self.odometer_values()
-        goal = [-800,0,0]
+        if goal is None:
+            goal = [-800,0,0]
 
         # Compute new command speed to perform obstacle avoidance
         command = potential_field_control(self.lidar(), pose, goal)

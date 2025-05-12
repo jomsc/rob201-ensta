@@ -42,7 +42,7 @@ class Planner:
         for dx, dy in directions:
             nx, ny = x + dx, y + dy
             # Check if the neighbor is within the grid boundaries
-            if 0 <= nx < self.grid.width and 0 <= ny < self.grid.height:
+            if 0 <= nx < self.grid.x_max_map and 0 <= ny < self.grid.y_max_map:
                 # Check if the cell is free (not occupied by an obstacle)
                 if self.grid.occupancy_map[nx, ny] < 0.5 :  # Assuming < 0.5 is free space
                     neighbors.append((nx, ny))
@@ -83,7 +83,7 @@ class Planner:
         f_score = {}
         f_score[start_cell] = self.heuristic(start_cell, goal_cell)
         
-        # For retrieving items from the heap
+        # For tracking items in the heap
         open_set_hash = {start_cell}
         
         while open_set:
@@ -93,12 +93,15 @@ class Planner:
             
             # If we've reached the goal, reconstruct the path
             if current == goal_cell:
+                # Start with the goal cell
                 path = []
-                while current in came_from:
-                    # Convert map coordinates back to world coordinates before adding to path
-                    world_x, world_y = self.grid.conv_map_to_world(current[0], current[1])
+                current_cell = current
+                
+                # Reconstruct path from goal to start
+                while current_cell in came_from:
+                    world_x, world_y = self.grid.conv_map_to_world(current_cell[0], current_cell[1])
                     path.append(np.array([world_x, world_y, 0]))  # theta is set to 0
-                    current = came_from[current]
+                    current_cell = came_from[current_cell]
                 
                 # Add the start position
                 world_x, world_y = self.grid.conv_map_to_world(start_cell[0], start_cell[1])
