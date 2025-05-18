@@ -166,6 +166,7 @@ class OccupancyGrid:
         robot_pose : [x, y, theta] nparray, corrected robot pose
         """
 
+
         img = cv2.flip(self.occupancy_map.T, 0)
         img = img - img.min()
         img = img / img.max() * 255
@@ -173,10 +174,14 @@ class OccupancyGrid:
         img_color = cv2.applyColorMap(src=img, colormap=cv2.COLORMAP_JET)
 
         if traj is not None:
+            length = len(traj)
+            traj = np.concatenate(traj).reshape(3, length)
             traj_map_x, traj_map_y = self.conv_world_to_map(traj[0, :], traj[1, :])
             traj_map = np.vstack((traj_map_x, self.y_max_map - traj_map_y))
             for i in range(len(traj_map_x) - 1):
-                cv2.line(img_color, traj_map[:, i], traj_map[:, i + 1], (180, 180, 180), 2)
+                color_val = 180*(len(traj_map_x)-1-i)/(len(traj_map_x)-1)
+                cv2.circle(img_color, traj_map[:, i], 1, (color_val, color_val, color_val), -1)
+                #cv2.line(img_color, traj_map[:, i], traj_map[:, i + 1], (180, 180, 180), 2)
 
         if goal is not None:
             pt_x, pt_y = self.conv_world_to_map(goal[0], goal[1])
@@ -190,6 +195,7 @@ class OccupancyGrid:
 
         pt1_x, pt1_y = self.conv_world_to_map(robot_pose[0], robot_pose[1])
 
+        
         # print("robot_pose", robot_pose)
         pt1 = (int(pt1_x), self.y_max_map - int(pt1_y))
         pt2 = (int(pt2_x), self.y_max_map - int(pt2_y))

@@ -14,7 +14,7 @@ from control import potential_field_control, reactive_obst_avoid
 from occupancy_grid import OccupancyGrid
 from planner import Planner
 
-NB_ITER_EXPLO = 1000
+NB_ITER_EXPLO = 200
 
 # Definition of our robot controller
 class MyRobotSlam(RobotAbstract):
@@ -40,7 +40,7 @@ class MyRobotSlam(RobotAbstract):
                                             x_max=size_area[0] / 2 - robot_position[0],
                                             y_min=-(size_area[1] / 2 + robot_position[1]),
                                             y_max=size_area[1] / 2 - robot_position[1],
-                                            resolution=4)
+                                            resolution=2)
 
         self.tiny_slam = TinySlam(self.occupancy_grid)
         self.planner = Planner(self.occupancy_grid)
@@ -58,21 +58,25 @@ class MyRobotSlam(RobotAbstract):
         self.counter += 1
 
         self.corrected_pose = self.tiny_slam.get_corrected_pose(self.odometer_values())
+        self.planner.odom_pose_ref = self.tiny_slam.odom_pose_ref
 
         print("itération :", self.counter)
         if self.counter < NB_ITER_EXPLO:
             goal = [-800,0,0]
+            if self.counter % 2 == 0:
+                self.occupancy_grid.display_cv(self.odometer_values(), goal)
             
         else:
             goal = self.planner.explore_frontiers()
             path = self.planner.plan(self.corrected_pose, goal)
             goal = path[1]
+
+            objective = self.planner.explore_frontiers()
+            if self.counter % 2 == 0:
+                self.occupancy_grid.display_cv(self.odometer_values(), goal, path)
             
         
         print("goal : ", goal)
-
-        if self.counter % 2 == 0:
-            self.occupancy_grid.display_cv(self.odometer_values(), goal)
         
         return self.control_tp2(goal)
 
